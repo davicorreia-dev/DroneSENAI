@@ -1,0 +1,59 @@
+#include "HX711.h"
+#include <Servo.h>
+
+#define DOUT 3
+#define SCK 2
+#define ESC_PIN 9
+
+HX711 scale;
+Servo esc;
+
+// Substitua o valor abaixo pelo seu fator real (raw por kg)
+float fatorCalibracao = 14000.0;
+
+int pwmMin = 1000;
+int pwmMax = 2000;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Config HX711
+  scale.begin(DOUT, SCK);
+  scale.set_scale(fatorCalibracao); 
+  scale.tare(); // zera balança
+
+  // Config ESC
+  esc.attach(ESC_PIN);
+  esc.writeMicroseconds(pwmMin);
+  delay(3000); // tempo para o ESC armar
+
+  Serial.println("ESC armado. Iniciando teste em 3 segundos...");
+  delay(3000);
+}
+
+void loop() {
+
+  Serial.println("==== Rampa de teste do motor ====");
+
+  for (int pwm = pwmMin; pwm <= pwmMax; pwm += 50) {
+
+    esc.writeMicroseconds(pwm);
+    delay(500); // estabilidade do motor
+
+    // Lê empuxo em kg diretamente
+    float empuxoKg = scale.get_units(10); 
+
+    // Converte para Newton
+    float empuxoN = empuxoKg * 9.80665;
+
+    Serial.print("PWM: "); Serial.print(pwm);
+    Serial.print(" | Empuxo: ");
+    Serial.print(empuxoKg, 3); Serial.print(" kg");
+    Serial.print(" ("); Serial.print(empuxoN, 3); Serial.println(" N)");
+  }
+
+  Serial.println("Rampa finalizada. Voltando ao mínimo...");
+  esc.writeMicroseconds(pwmMin);
+
+  delay(5000);
+}
