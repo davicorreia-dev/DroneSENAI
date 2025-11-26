@@ -1,0 +1,36 @@
+#include "HX711.h"
+HX711 scale;
+#define DOUT 3
+#define CLK 2
+
+void setup() {
+  Serial.begin(9600);
+  scale.begin(DOUT, CLK);
+  scale.set_scale(1); // inicia sem fator
+  scale.tare();
+  Serial.println("Coloque um peso conhecido e digite o valor EM KG no serial.");
+  Serial.println("Exemplo: 0.5   (para 500g)");
+}
+
+void loop() {
+  if (Serial.available()) {
+    float pesoKg = Serial.parseFloat(); 
+    delay(200);
+    
+    long raw = scale.read_average(20);
+
+    Serial.print("Raw average: ");
+    Serial.println(raw);
+
+    Serial.print("Peso informado (kg): ");
+    Serial.println(pesoKg);
+
+    if (pesoKg > 0) {
+      float fator = raw / pesoKg;
+      Serial.print("Fator sugerido (raw por kg): ");
+      Serial.println(fator, 4);
+    }
+  }
+
+  delay(200);
+}
